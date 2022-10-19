@@ -47,6 +47,8 @@ ALU = {0:"AND", 1:"EOR", 2:"LSL", 3:"LSR", 4:"ASR", 5:"ADC", 6:"SBC", 7:"ROR", 8
 HIREG = {0:"ADD", 1:"CMP", 2:"MOV", 3:"BX"}
 LSBWFLAG = {"00":"STR", "01":"STRB", "10":"LDR", "11":"LDRB"}
 SEHFLAG = {"00":"STRH", "01":"LDRH", "10":"LDSB", "11":"LDSH"}
+CONDBRANCH = {"0000":"BEQ", "0001":"BNE", "0010":"BCS", "0011":"BCC", "0100":"BMI", "0101":"BPL", "0110":"BVS",
+              "0111":"BVC", "1000":"BHI", "1001":"BLS", "1010":"BGE", "1011":"BLT", "1100":"BGT", "1101":"BLE",}
 
 
 def machine_to_assembly(instruction):
@@ -63,7 +65,7 @@ def machine_to_assembly(instruction):
         op = MSR[opCode]
         offset5 = "#" + str(int(instruction[5:10],2))
         assembly = [op, rd, rs, offset5]
-      else:
+      elif opCode == 3:
         iFlag = int(instruction[5])
         op = ADDSUB[int(instruction[6])]
         rnOffset = int(instruction[7:10], 2)
@@ -91,7 +93,7 @@ def machine_to_assembly(instruction):
 
       # PC Relative Load
       elif int(instruction[3:5], 2) == 1:
-        assembly = ["LDR", "R" + str(int(instruction[5:8], 2)), "[PC, #" + str(4*int(instruction[8:16], 2)) + "]"]
+        assembly = ["LDR", "R" + str(int(instruction[5:8], 2)), "[PC, #" + str(int(instruction[8:16], 2) << 2) + "]"]
 
       # Load/store with register offset
       elif int(instruction[3]) == 1 and int(instruction[6]) == 0:
@@ -108,23 +110,67 @@ def machine_to_assembly(instruction):
     # Load store with immediate offset    
     elif conditionCode == 3:
       LB = str(int(instruction[4])) + str(int(instruction[3]))
-      offset5 = str(int(instruction[5:10], 2))
+      offset5 = str(int(instruction[5:10], 2) << 2)
       assembly = [LSBWFLAG[LB], rd, '[' + rs + ',' + '#' + offset5 + ']']
-      ###########################################OFFSET###############
-    
 
     # Load/store halfword and SP-relative load/store
     elif conditionCode == 4:
+
+      # Load/Store halfword
+      if int(instruction[3]) == 0:
+        offset5 = str(int(instruction[5:10], 2) << 1)
+        assembly = [('STRH' if int(instruction[4]) == 0 else 'LDRH'), rd, '[' + rs + ', #' + offset5]
+      # Relative load/store
+      elif int(instruction[3]) == 1:
+        rd_alt = 'R' + str(int(instruction[5:8], 2))
+        word8 = str(int(instruction[8:16], 2) << 2)
+        assembly = [('STR' if int(instruction[4]) == 0 else 'LDR'), rd_alt, '[SP, ' + ' #' + word8 + ']']
+   
+    # Load Addr and push/pop registers
+    elif conditionCode == 5:
+
+      if int(instruction[3]) == 0:
+        rd_alt = 'R' + str(int(instruction[5:8], 2))
+        word8 = str(int(instruction[8:16], 2) << 2)
+        assembly = ['ADD ', rd_alt, ('PC' if int(instruction[4]) == 0 else 'SP'), '#' + word8 ]
+
+      # Push/pop registers  
+      #elif int(instruction[3]) == 1:
+       # rList = str(int(instruction[8:16], 2))
       
+    elif conditionCode == 6:
 
+      # Conditional Branch
+      if int(instruction[4:8], 2) != 15:
+        cond = str(instruction[4:8])
+        sOffset8 = str(instruction[8:16])
+        assembly = [CONDBRANCH[cond]]
 
+      # Software interrupt
+      elif int(instruction[4:8], 2) == 15:
+        value8 = str(int(instruction[8:16], 2))
+        assembly = ['SWI', value8]
 
+    # Unconditional branch and long branch
+    elif conditionCode == 7:
+
+      # Unconditional branch
+      if int(instruction[3:5], 2) == 0:
+        offset11 = str(int(instruction[5:16], 2))
+        assembly = ['B']
+      
+      # Long Branch with link
+      elif int(instruction[3]) == 1:
+        offset = str(int(instruction[5:16], 2))
+        assembly = [('BL' if int(instruction[4]) == 0 else '')]
 
     else:
-      print("Invalid condition code")
+      print("Invalid bin")
 
     print(assembly)
     """ END SOLUTION """
 
-machine_to_assembly("0100101111010011")
+machine_to_assembly("1101111100010010")
+                    
+
 
