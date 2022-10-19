@@ -87,9 +87,9 @@ def machine_to_assembly(instruction):
       elif int(instruction[3:6], 2) == 1:
         h1 = int(instruction[8])
         h2 = int(instruction[9])
-        assembly = [HIREG[int(instruction[6:8], 2)], (("R" + str(int(instruction[13:16],2)) if h1 == 0 else "H" + str(8 + int(instruction[13:16],2))), 
-                    ("R" + str(int(instruction[10:13],2)) if h2 == 0 else "H" + str(8 + int(instruction[10:13],2)))) if (int(instruction[6:8], 2) != 3) else 
-                    ("R" + str(int(instruction[10:13],2))) if h2 == 0 else("H" + str(8 + int(instruction[10:13],2)))]
+        assembly = [HIREG[int(instruction[6:8], 2)], ("R" + str(int(instruction[13:16],2))) if h1 == 0 else ("H" + str(8 + int(instruction[13:16],2))), 
+                    ("R" + str(int(instruction[10:13],2))) if h2 == 0 else ("H" + str(8 + int(instruction[10:13],2))) if (int(instruction[6:8], 2) != 3) else 
+                    ("R" + str(int(instruction[10:13],2))) if h2 == 0 else ("H" + str(8 + int(instruction[10:13],2)))]
 
       # PC Relative Load
       elif int(instruction[3:5], 2) == 1:
@@ -119,58 +119,36 @@ def machine_to_assembly(instruction):
       # Load/Store halfword
       if int(instruction[3]) == 0:
         offset5 = str(int(instruction[5:10], 2) << 1)
-        assembly = [('STRH' if int(instruction[4]) == 0 else 'LDRH'), rd, '[' + rs + ', #' + offset5]
-      # Relative load/store
+        assembly = [('STRH' if int(instruction[4]) == 0 else 'LDRH'), rd, '[' + rs + ', #' + offset5 + ']']
+      # SP Relative load/store
       elif int(instruction[3]) == 1:
         rd_alt = 'R' + str(int(instruction[5:8], 2))
         word8 = str(int(instruction[8:16], 2) << 2)
         assembly = [('STR' if int(instruction[4]) == 0 else 'LDR'), rd_alt, '[SP, ' + ' #' + word8 + ']']
    
-    # Load Addr and push/pop registers
+    # Load Addr
     elif conditionCode == 5:
 
+      # Load address
       if int(instruction[3]) == 0:
         rd_alt = 'R' + str(int(instruction[5:8], 2))
         word8 = str(int(instruction[8:16], 2) << 2)
         assembly = ['ADD ', rd_alt, ('PC' if int(instruction[4]) == 0 else 'SP'), '#' + word8 ]
-
-      # Push/pop registers  
-      #elif int(instruction[3]) == 1:
-       # rList = str(int(instruction[8:16], 2))
-      
+    
+    # Software interrupt
     elif conditionCode == 6:
-
-      # Conditional Branch
-      if int(instruction[4:8], 2) != 15:
-        cond = str(instruction[4:8])
-        sOffset8 = str(instruction[8:16])
-        assembly = [CONDBRANCH[cond]]
-
-      # Software interrupt
-      elif int(instruction[4:8], 2) == 15:
+      if int(instruction[4:8], 2) == 15:
         value8 = str(int(instruction[8:16], 2))
         assembly = ['SWI', value8]
 
-    # Unconditional branch and long branch
-    elif conditionCode == 7:
-
-      # Unconditional branch
-      if int(instruction[3:5], 2) == 0:
-        offset11 = str(int(instruction[5:16], 2))
-        assembly = ['B']
-      
-      # Long Branch with link
-      elif int(instruction[3]) == 1:
-        offset = str(int(instruction[5:16], 2))
-        assembly = [('BL' if int(instruction[4]) == 0 else '')]
-
+    if assembly[0] == '':
+      print("Invalid instruction")
     else:
-      print("Invalid bin")
+      print(assembly)
 
-    print(assembly)
+    
     """ END SOLUTION """
-
-machine_to_assembly("1101111100010010")
+    
+for j in instr_bin2:
+  machine_to_assembly(j)
                     
-
-
